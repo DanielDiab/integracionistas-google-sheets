@@ -193,3 +193,69 @@
     </script>
 </body>
 </html>
+
+<script>
+    // Función para avanzar entre preguntas
+    function showNext(nextId) {
+        const current = document.querySelector('.question:not(.hidden)');
+        const next = document.getElementById(`pregunta-${nextId}`);
+        if (current) current.classList.add('hidden');
+        if (next) next.classList.remove('hidden');
+    }
+
+    // Manejar el envío del formulario
+    document.getElementById('cuestionario').addEventListener('submit', async (event) => {
+        event.preventDefault(); // Evitar comportamiento por defecto
+
+        // Recoger datos del formulario
+        const formData = new FormData(event.target);
+        const data = {
+            situacion: formData.get('situacion'),
+            contenido: formData.get('contenido'),
+            tamanio: formData.get('tamanio'),
+            obstaculo: formData.get('obstaculo'),
+            nombre: formData.get('nombre'),
+            email: formData.get('email'),
+            telefono: formData.get('telefono'),
+        };
+
+        // URL de la API de Google Sheets
+        const SHEET_ID = '1aC5nxvn2gEmWnNI_X4iiu570ZtMEICboYXbugZ_uuVo';
+        const API_KEY = 'AIzaSyBR3rgnhJ09KsTikd6T4h12d5m08S9LnXc';
+        const API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Sheet1!A2:append?valueInputOption=USER_ENTERED&key=${API_KEY}`;
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    range: 'Sheet1!A1',
+                    majorDimension: 'ROWS',
+                    values: [[
+                        data.situacion,
+                        data.contenido,
+                        data.tamanio,
+                        data.obstaculo,
+                        data.nombre,
+                        data.email,
+                        data.telefono,
+                    ]],
+                }),
+            });
+
+            if (response.ok) {
+                alert('Encuesta enviada con éxito');
+                event.target.reset(); // Reinicia el formulario
+            } else {
+                const error = await response.json();
+                console.error('Error al enviar los datos:', error);
+                alert('Error al enviar la encuesta.');
+            }
+        } catch (error) {
+            console.error('Error al conectar con la API:', error);
+            alert('Hubo un problema al enviar la encuesta.');
+        }
+    });
+</script>
+</body>
+</html>
