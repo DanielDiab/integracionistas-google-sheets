@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Sheets API Integration</title>
+  <script>
+    // Clave de API
+    const API_KEY = 'AIzaSyBR3rgnhJ09KsTikd6T4h12d5m08S9LnXc';
+
+    // ID de la hoja de cálculo
+    const SHEET_ID = '1aC5nxvn2gEmWnNI_X4iiu570ZtMEICboYXbugZ_uuVo'; 
+
+    // Rango que deseas leer (e.g., "Sheet1!A1:C10")
+    const RANGE = 'Sheet1!A1:C10';
+
+    // URL de la API
+    const API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+
+    // Función para leer datos de Google Sheets
+    async function readGoogleSheet() {
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error(`Error: ${response.statusText}`);
+
+        const data = await response.json();
+        console.log('Datos obtenidos:', data.values);
+
+        // Mostrar los datos en la página
+        const output = document.getElementById('output');
+        output.innerHTML = '<h3>Datos de Google Sheets:</h3>';
+        data.values.forEach(row => {
+          const rowElement = document.createElement('p');
+          rowElement.textContent = row.join(', ');
+          output.appendChild(rowElement);
+        });
+      } catch (error) {
+        console.error('Error al leer Google Sheets:', error);
+      }
+    }
+
+    // Llamar a la función cuando la página cargue
+    window.onload = readGoogleSheet;
+  </script>
+</head>
+<body>
+  <h1>Integración con Google Sheets</h1>
+  <div id="output">Cargando datos...</div>
+</body>
+</html>
