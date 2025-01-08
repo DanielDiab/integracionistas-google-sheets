@@ -1,4 +1,3 @@
-"""esteban la chupa"""
 var sheetName = 'Sheet1'
 var scriptProp = PropertiesService.getScriptProperties()
 
