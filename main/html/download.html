@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Descargar Respuestas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .download-button {
+            background-color: #28a745;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .download-button:hover {
+            background-color: #218838;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Descargar Respuestas</h1>
+        <p>Haz clic en el botón para descargar las respuestas guardadas en formato JSON.</p>
+        <button class="download-button" onclick="downloadJSON()">Descargar JSON</button>
+        <p id="error-message" class="hidden">No hay respuestas disponibles para descargar.</p>
+    </div>
+
+    <script>
+        function downloadJSON() {
+            // Recuperar los datos antes de limpiar el localStorage
+            const storedData = localStorage.getItem('surveyResponses');
+            if (!storedData) {
+                document.getElementById('error-message').classList.remove('hidden');
+                return;
+            }
+
+            // Crear y descargar el archivo
+            const blob = new Blob([storedData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Añadir la fecha actual al nombre del archivo
+            const fecha = new Date().toISOString().split('T')[0];
+            a.download = `respuestas_${fecha}.json`;
+            
+            // Descargar el archivo
+            a.click();
+
+            // Limpiar el objeto URL
+            URL.revokeObjectURL(url);
+            
+            // Limpiar el localStorage
+            localStorage.clear();
+            
+            // Opcional: Mostrar mensaje de confirmación
+            alert('Las respuestas han sido descargadas y el almacenamiento ha sido limpiado.');
+
+            // Opcional: Actualizar la interfaz si es necesario
+            document.getElementById('error-message').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
