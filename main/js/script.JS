@@ -1,52 +1,122 @@
-function saveSurveyResponses() {
-    const responses = {
-        situacion: document.querySelector('input[name="situacion"]:checked')?.value || "",
-        contenido: document.querySelector('input[name="contenido"]:checked')?.value || "",
-        tamanio: document.querySelector('input[name="tamanio"]:checked')?.value || "",
-        obstaculo: document.querySelector('input[name="obstaculo"]:checked')?.value || "",
-        nombre: document.getElementById('nombre')?.value.trim() || "",
-        email: document.getElementById('email')?.value.trim() || "",
-        telefono: document.getElementById('telefono')?.value.trim() || "",
-        timestamp: new Date().toISOString() // Añadimos timestamp para identificar cada respuesta
-    };
+// Configuración de Airtable
+const AIRTABLE_API_KEY = 'patmlLMS0q68QCIcA.fc15dce0bcf6525bd874156b4e3572c9bc29d29a132c8ef9a27ff245c353abfc';
+const BASE_ID = 'appGiSqEHv6y6Pe4G';
+const TABLE_NAME = 'Table 1';
 
-    // Validar si se completaron todos los campos obligatorios
-    if (!responses.situacion || !responses.contenido || !responses.tamanio || !responses.obstaculo || !responses.nombre || !responses.email || !responses.telefono) {
-        alert("Por favor, completa todas las preguntas y campos obligatorios.");
-        return;
-    }
+// Función para enviar datos a Airtable
+async function sendToAirtable(data) {
+    try {
+        // Creamos el objeto de datos asegurándonos que los valores coincidan exactamente
+        const airTableData = {
+            records: [{
+                fields: {
+                    Nombre: data.nombre,
+                    Email: data.email,
+                    Telefono: data.telefono,
+                    // Aseguramos que los valores coincidan exactamente con las opciones en Airtable
+                    Profesion: mapSituacion(data.situacion),
+                    Redes: mapRedes(data.contenido),
+                    Ingresos: mapIngresos(data.tamanio),
+                    Obstaculo: mapObstaculo(data.obstaculo)
+                }
+            }]
+        };
 
-    // Obtener respuestas existentes o crear un nuevo array
-    let allResponses = JSON.parse(localStorage.getItem('surveyResponses') || '[]');
-    
-    // Si no es un array (compatibilidad con versión anterior), convertirlo en array
-    if (!Array.isArray(allResponses)) {
-        allResponses = [];
-    }
+        console.log('Enviando datos a Airtable:', airTableData); // Para debugging
 
-    // Añadir nueva respuesta
-    allResponses.push(responses);
+        const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(airTableData)
+        });
 
-    // Guardar todas las respuestas
-    localStorage.setItem('surveyResponses', JSON.stringify(allResponses));
-}
-
-
-// Función para obtener las respuestas en formato JSON, verificando si han expirado
-function getSurveyResponses() {
-    const storedData = localStorage.getItem('surveyResponses');
-    if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        const currentTime = new Date().getTime();
-
-        if (currentTime > parsedData.expiration) {
-            localStorage.removeItem('surveyResponses'); // Elimina los datos si han expirado
-            return null; // No retorna datos si han expirado
+        const responseData = await response.json();
+        
+        if (!response.ok) {
+            console.error('Error response from Airtable:', responseData);
+            throw new Error(`Error de Airtable: ${responseData.error?.message || 'Error desconocido'}`);
         }
 
-        return parsedData.data; // Retorna las respuestas si no han expirado
+        return responseData;
+    } catch (error) {
+        console.error('Error completo:', error);
+        throw error;
     }
-    return null; // Retorna null si no hay respuestas guardadas
+}
+
+// Funciones de mapeo para asegurar valores exactos
+function mapSituacion(valor) {
+    const mapping = {
+        "Quiero emprender": "Quiero emprender",
+        "Ya tengo un negocio físico": "Ya tengo un negocio físico",
+        "Ya tengo un negocio digital": "Ya tengo un negocio digital",
+        "Soy freelancer": " Soy freelancer"
+    };
+    return mapping[valor] || valor;
+}
+
+function mapRedes(valor) {
+    const mapping = {
+        "Publico contenido en instagram": "Publico contenido en instagram",
+        "No publico contenido en instagram": " No publico contenido en instagram",
+        "Quiero empezar a publicar contenido en instagram": "Quiero empezar a publicar contenido en instagram"
+    };
+    return mapping[valor] || valor;
+}
+
+function mapIngresos(valor) {
+    const mapping = {
+        "0$ - $10.000 USD": "0$ - $10.000 USD",
+        "$10.000 - $50.000": "$10.000 - $50.000",
+        "$50.000 - $100.000": "$50.000 - $100.000",
+        "$100.000 - $250.000": " $100.000 - $250.000",
+        "$250.000+": "$250.000+"
+    };
+    return mapping[valor] || valor;
+}
+
+function mapObstaculo(valor) {
+    const mapping = {
+        "Mas leads calificadas": "Más leads calificadas",
+        "Mejorar en ventas": "Mejorar en ventas",
+        "Mejorar mi contenido": "Mejorar mi contenido",
+        "No saber como empezar mi marca personal": "No saber como empezar mi marca personal"
+    };
+    return mapping[valor] || valor;
+}
+
+// Función para guardar las respuestas
+async function saveSurveyResponses() {
+    try {
+        const responses = {
+            situacion: document.querySelector('input[name="situacion"]:checked')?.value || "",
+            contenido: document.querySelector('input[name="contenido"]:checked')?.value || "",
+            tamanio: document.querySelector('input[name="tamanio"]:checked')?.value || "",
+            obstaculo: document.querySelector('input[name="obstaculo"]:checked')?.value || "",
+            nombre: document.getElementById('nombre')?.value.trim() || "",
+            email: document.getElementById('email')?.value.trim() || "",
+            telefono: document.getElementById('telefono')?.value.trim() || ""
+        };
+
+        // Log para debugging
+        console.log('Respuestas recolectadas:', responses);
+
+        // Validar si se completaron todos los campos obligatorios
+        if (!responses.situacion || !responses.contenido || !responses.tamanio || 
+            !responses.obstaculo || !responses.nombre || !responses.email || !responses.telefono) {
+            alert("Por favor, completa todas las preguntas y campos obligatorios.");
+            return;
+        }
+
+        await sendToAirtable(responses);
+        showThanksAndRedirect();
+    } catch (error) {
+        alert(`Error al guardar las respuestas: ${error.message}`);
+        console.error('Error al guardar respuestas:', error);
+    }
 }
 
 // Función para mostrar la siguiente pregunta
@@ -62,53 +132,21 @@ function showNext(preguntaId) {
     }
 }
 
-// Asigna el evento de envío del formulario para guardar las respuestas y mostrar la pantalla de agradecimiento
-const form = document.getElementById('cuestionario');
-form.addEventListener('submit', function (event) {
-    event.preventDefault(); // Prevenir el envío del formulario
-
-    saveSurveyResponses(); // Guarda las respuestas en formato JSON
-    showThanksAndRedirect(); // Muestra agradecimiento y redirige
-});
-
-// Función para mostrar la pantalla de agradecimiento y redirigir después de unos segundos
+// Función para mostrar la pantalla de agradecimiento y redirigir
 function showThanksAndRedirect() {
-    document.querySelectorAll('.question').forEach((q) => q.classList.add('hidden')); // Oculta todas las preguntas
+    document.querySelectorAll('.question').forEach((q) => q.classList.add('hidden'));
     const thanksScreen = document.getElementById('agradecimiento');
     if (thanksScreen) {
-        thanksScreen.classList.remove('hidden'); // Muestra la pantalla de agradecimiento
+        thanksScreen.classList.remove('hidden');
     }
     setTimeout(() => {
-        window.location.href = 'thank-you.html'; // Cambia a la URL que desees
-    }, 3000); // Redirige después de 3 segundos
+        window.location.href = 'thank-you.html';
+    }, 3000);
 }
 
-
-function downloadJSON() {
-    const storedData = localStorage.getItem('surveyResponses');
-    if (!storedData) {
-        document.getElementById('error-message').classList.remove('hidden');
-        return;
-    }
-
-    const blob = new Blob([storedData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'respuestas.json';
-    
-    // Añadir la fecha actual al nombre del archivo
-    const fecha = new Date().toISOString().split('T')[0];
-    a.download = `respuestas_${fecha}.json`;
-    
-    a.click();
-
-    URL.revokeObjectURL(url);
-    
-    // Limpiar todo el localStorage después de la descarga
-    localStorage.clear();
-    
-    // Opcional: Mostrar mensaje de confirmación
-    alert('Las respuestas han sido descargadas y el almacenamiento ha sido limpiado.');
-}
+// Asignar el evento de envío del formulario
+const form = document.getElementById('cuestionario');
+form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    saveSurveyResponses();
+});
